@@ -19,6 +19,6 @@ class User(Base):
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    # Relacionamentos (vamos usar depois)
+    # Relacionamentos
     tickets = relationship("Ticket", back_populates="owner")
     comments = relationship("Comment", back_populates="author")
