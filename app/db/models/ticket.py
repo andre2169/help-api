@@ -13,8 +13,8 @@ class Ticket(Base):
     title = Column(String(150), nullable=False)
     description = Column(Text, nullable=False)
 
-    status = Column(String(20), nullable=False, default="open")
     # open | in_progress | closed
+    status = Column(String(20), nullable=False, default="open")
 
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     technician_id = Column(Integer, ForeignKey("users.id"), nullable=True)
@@ -23,11 +23,25 @@ class Ticket(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Relacionamentos
-    owner = relationship("User", foreign_keys=[user_id], back_populates="tickets")
-    technician = relationship("User", foreign_keys=[technician_id])
 
+    # Usuário que criou o ticket
+    owner = relationship(
+        "User",
+        foreign_keys=[user_id],
+        back_populates="tickets"
+    )
+
+    # Usuário técnico atribuído ao ticket
+    technician = relationship(
+        "User",
+        foreign_keys=[technician_id],
+        back_populates="assigned_tickets"
+    )
+
+    # Comentários do ticket
     comments = relationship(
         "Comment",
         back_populates="ticket",
         cascade="all, delete-orphan"
     )
+
