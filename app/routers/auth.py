@@ -10,6 +10,8 @@ from app.deps import get_db
 from app.schemas.auth import LoginRequest, TokenResponse
 from app.core.config import settings
 
+from app.core.dependencies import get_current_user
+
 router = APIRouter(
     prefix="/auth",
     tags=["Auth"]
@@ -40,3 +42,7 @@ def login(
         "access_token": access_token,
         "token_type": "bearer"
     }
+
+@router.get("/me")
+def read_me(current_user: User = Depends(get_current_user)):
+    return current_user
