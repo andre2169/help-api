@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.db.models.ticket import Ticket
 from app.schemas.ticket import TicketCreate, TicketResponse
 from app.db.models.user import User
+from app.core.dependencies import get_current_user
 from app.deps import get_db
 
 router = APIRouter(
@@ -11,28 +12,25 @@ router = APIRouter(
     tags=["Tickets"]
 )
 
-@router.post("/", response_model=TicketResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/",
+    response_model=TicketResponse,
+    status_code=status.HTTP_201_CREATED
+)
 def create_ticket(
     ticket_in: TicketCreate,
-    user_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Cria um novo chamado (ticket) para um usuário
+    Cria um novo ticket para o usuário autenticado
     """
-
-    # Verifica se o usuário existe
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(
-            status_code=404,
-            detail="Usuário não encontrado"
-        )
 
     ticket = Ticket(
         title=ticket_in.title,
         description=ticket_in.description,
-        user_id=user_id
+        user_id=current_user.id
     )
 
     db.add(ticket)
@@ -42,10 +40,20 @@ def create_ticket(
     return ticket
 
 
-@router.get("/", response_model=list[TicketResponse])
-def list_tickets(db: Session = Depends(get_db)):
+@router.get(
+    "/",
+    response_model=list[TicketResponse]
+)
+def list_tickets(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """
-    Lista todos os tickets
+    Lista tickets do usuário autenticado
     """
-    tickets = db.query(Ticket).all()
+
+    tickets = db.query(Ticket).filter(
+        Ticket.user_id == current_user.id
+    ).all()
+
     return tickets
