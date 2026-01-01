@@ -4,15 +4,21 @@ from sqlalchemy.orm import Session
 from app.db.models.ticket import Ticket
 from app.schemas.ticket import TicketCreate, TicketResponse
 from app.db.models.user import User
-from app.core.dependencies import get_current_user
+
 from app.deps import get_db
+from app.core.permissions import (
+    require_user,
+    require_technician,
+)
 
 router = APIRouter(
     prefix="/tickets",
     tags=["Tickets"]
 )
 
-
+# --------------------------------------------------
+# Criar ticket (USER)
+# --------------------------------------------------
 @router.post(
     "/",
     response_model=TicketResponse,
@@ -21,16 +27,13 @@ router = APIRouter(
 def create_ticket(
     ticket_in: TicketCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_user),
 ):
-    """
-    Cria um novo ticket para o usuário autenticado
-    """
-
     ticket = Ticket(
         title=ticket_in.title,
         description=ticket_in.description,
-        user_id=current_user.id
+        user_id=current_user.id,
+        status="open"
     )
 
     db.add(ticket)
@@ -40,20 +43,125 @@ def create_ticket(
     return ticket
 
 
+# --------------------------------------------------
+# Listar tickets
+# USER → só os seus
+# TECH/ADMIN → todos
+# --------------------------------------------------
 @router.get(
     "/",
     response_model=list[TicketResponse]
 )
 def list_tickets(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_user),
 ):
-    """
-    Lista tickets do usuário autenticado
-    """
+    if current_user.role in ["technician", "admin"]:
+        return db.query(Ticket).all()
 
-    tickets = db.query(Ticket).filter(
+    return db.query(Ticket).filter(
         Ticket.user_id == current_user.id
     ).all()
 
-    return tickets
+
+# --------------------------------------------------
+# Técnico assume ticket
+# open → in_progress
+# --------------------------------------------------
+@router.patch(
+    "/{ticket_id}/assign",
+    response_model=TicketResponse
+)
+def assign_ticket(
+    ticket_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_technician),
+):
+    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket não encontrado")
+
+    if ticket.status != "open":
+        raise HTTPException(
+            status_code=400,
+            detail="Ticket não pode ser assumido"
+        )
+
+    ticket.technician_id = current_user.id
+    ticket.status = "in_progress"
+
+    db.commit()
+    db.refresh(ticket)
+
+    return ticket
+
+
+# --------------------------------------------------
+# Técnico resolve ticket
+# in_progress → resolved
+# --------------------------------------------------
+@router.patch(
+    "/{ticket_id}/resolve",
+    response_model=TicketResponse
+)
+def resolve_ticket(
+    ticket_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_technician),
+):
+    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket não encontrado")
+
+    if ticket.status != "in_progress":
+        raise HTTPException(
+            status_code=400,
+            detail="Ticket não está em andamento"
+        )
+
+    ticket.status = "resolved"
+
+    db.commit()
+    db.refresh(ticket)
+
+    return ticket
+
+
+# --------------------------------------------------
+# Usuário confirma fechamento
+# resolved → closed
+# --------------------------------------------------
+@router.patch(
+    "/{ticket_id}/close",
+    response_model=TicketResponse
+)
+def close_ticket(
+    ticket_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_user),
+):
+    ticket = db.query(Ticket).filter(Ticket.id == ticket_id).first()
+
+    if not ticket:
+        raise HTTPException(status_code=404, detail="Ticket não encontrado")
+
+    if ticket.user_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Você não pode fechar este ticket"
+        )
+
+    if ticket.status != "resolved":
+        raise HTTPException(
+            status_code=400,
+            detail="Ticket ainda não foi resolvido"
+        )
+
+    ticket.status = "closed"
+
+    db.commit()
+    db.refresh(ticket)
+
+    return ticket

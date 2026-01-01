@@ -9,7 +9,6 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str
-    role: Optional[str] = "user"
 
 
 class UserResponse(UserBase):
@@ -19,3 +18,18 @@ class UserResponse(UserBase):
 
     class Config:
         from_attributes = True
+
+class UserAdminResponse(BaseModel):
+    id: int
+    name: str
+    email: EmailStr
+    role: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class UserAdminUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[EmailStr] = None

@@ -12,9 +12,21 @@ router = APIRouter(
 )
 
 
-@router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def create_user(user_in: UserCreate, db: Session = Depends(get_db)):
-    user_exists = db.query(User).filter(User.email == user_in.email).first()
+@router.post(
+    "/",
+    response_model=UserResponse,
+    status_code=status.HTTP_201_CREATED
+)
+def create_user(
+    user_in: UserCreate,
+    db: Session = Depends(get_db)
+):
+   
+
+    user_exists = db.query(User).filter(
+        User.email == user_in.email
+    ).first()
+
     if user_exists:
         raise HTTPException(
             status_code=400,
@@ -25,7 +37,7 @@ def create_user(user_in: UserCreate, db: Session = Depends(get_db)):
         name=user_in.name,
         email=user_in.email,
         password_hash=hash_password(user_in.password),
-        role=user_in.role
+        role="user",
     )
 
     db.add(user)
