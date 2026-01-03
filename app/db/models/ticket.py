@@ -1,7 +1,6 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-
 from app.db.base import Base
 
 
@@ -44,4 +43,10 @@ class Ticket(Base):
         back_populates="ticket",
         cascade="all, delete-orphan"
     )
-
+   
+    # Se apagar um ticket o evento some
+    events = relationship(
+       "TicketEvent",
+       back_populates="ticket",
+       cascade="all, delete-orphan"
+    )

@@ -10,6 +10,7 @@ from app.core.permissions import (
     require_user,
     require_technician,
 )
+from app.core.events import create_ticket_event
 
 router = APIRouter(
     prefix="/tickets",
@@ -40,12 +41,23 @@ def create_ticket(
     db.commit()
     db.refresh(ticket)
 
+    # Evento: ticket criado
+    create_ticket_event(
+        db=db,
+        ticket_id=ticket.id,
+        user_id=current_user.id,
+        event_type="CREATED",
+        to_status="open",
+    )
+
+    db.commit()
+
     return ticket
 
 
 # --------------------------------------------------
 # Listar tickets
-# USER → só os seus
+# USER → só os
 # TECH/ADMIN → todos
 # --------------------------------------------------
 @router.get(
@@ -88,8 +100,19 @@ def assign_ticket(
             detail="Ticket não pode ser assumido"
         )
 
+    old_status = ticket.status
+
     ticket.technician_id = current_user.id
     ticket.status = "in_progress"
+
+    create_ticket_event(
+        db=db,
+        ticket_id=ticket.id,
+        user_id=current_user.id,
+        event_type="ASSIGNED",
+        from_status=old_status,
+        to_status="in_progress",
+    )
 
     db.commit()
     db.refresh(ticket)
@@ -121,7 +144,17 @@ def resolve_ticket(
             detail="Ticket não está em andamento"
         )
 
+    old_status = ticket.status
     ticket.status = "resolved"
+
+    create_ticket_event(
+        db=db,
+        ticket_id=ticket.id,
+        user_id=current_user.id,
+        event_type="RESOLVED",
+        from_status=old_status,
+        to_status="resolved",
+    )
 
     db.commit()
     db.refresh(ticket)
@@ -159,7 +192,17 @@ def close_ticket(
             detail="Ticket ainda não foi resolvido"
         )
 
+    old_status = ticket.status
     ticket.status = "closed"
+
+    create_ticket_event(
+        db=db,
+        ticket_id=ticket.id,
+        user_id=current_user.id,
+        event_type="CLOSED",
+        from_status=old_status,
+        to_status="closed",
+    )
 
     db.commit()
     db.refresh(ticket)
