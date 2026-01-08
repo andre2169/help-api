@@ -3,7 +3,16 @@ from typing import Optional, Literal
 from pydantic import BaseModel
 
 
+
+class TimelineAuthor(BaseModel):
+    id: int
+    name: str
+    email: str
+    role: str
+
+
 class TimelineItem(BaseModel):
+    id: int
     type: Literal["event", "comment"]
     created_at: datetime
 
@@ -15,4 +24,7 @@ class TimelineItem(BaseModel):
     # comment
     content: Optional[str] = None
 
-    user_id: int
+    author: TimelineAuthor
+
+    class Config:
+        exclude_none = True

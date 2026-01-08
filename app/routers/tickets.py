@@ -230,7 +230,8 @@ def get_ticket_or_404(db: Session, ticket_id: int) -> Ticket:
 
 @router.get(
     "/{ticket_id}/timeline",
-    response_model=List[TimelineItem]
+    response_model=List[TimelineItem],
+    response_model_exclude_none=True,
 )
 def ticket_timeline(
     ticket_id: int,
