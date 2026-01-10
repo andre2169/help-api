@@ -1,12 +1,11 @@
 from fastapi import FastAPI
-from app.routers import users
-from app.db.session import engine
-from app.db.base import Base
-from app.routers import tickets
-from app.routers import auth
-from app.routers import admin
-from app.routers import comments
-
+from app.api.v1 import (
+    tickets,
+    comments,
+    users,
+    auth,
+    admin,
+)
 
 app = FastAPI(
     title="Help API",
@@ -14,12 +13,19 @@ app = FastAPI(
     version="0.1.0"
 )
 
+# -------------------------
+# API v1
+# -------------------------
+app.include_router(users.router, prefix="/api/v1")
+app.include_router(auth.router, prefix="/api/v1")
+app.include_router(tickets.router, prefix="/api/v1")
+app.include_router(comments.router, prefix="/api/v1")
+app.include_router(admin.router, prefix="/api/v1")
 
-app.include_router(users.router)
-app.include_router(tickets.router)
-app.include_router(auth.router)
-app.include_router(admin.router)
-app.include_router(comments.router)
+
+
+
+
 
 
 
