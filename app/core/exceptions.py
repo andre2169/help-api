@@ -26,3 +26,13 @@ class UserAlreadyExists(Exception):
 class InvalidCredentials(Exception):
     """Email ou senha inválidos"""
     pass
+
+
+class UserNotFound(Exception):
+    """Usuário não encontrado"""
+    pass
+
+
+class InvalidUserRole(Exception):
+    """Role inválido"""
+    pass

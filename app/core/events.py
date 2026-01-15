@@ -20,3 +20,4 @@ def create_ticket_event(
     )
 
     db.add(event)
+    return event

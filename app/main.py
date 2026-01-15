@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from app.core.middleware import ExceptionMiddleware
 from app.api.v1 import (
     tickets,
     comments,
@@ -13,6 +14,10 @@ app = FastAPI(
     version="0.1.0"
 )
 
+# Middleware
+app.add_middleware(ExceptionMiddleware)
+
+
 # -------------------------
 # API v1
 # -------------------------
@@ -21,10 +26,6 @@ app.include_router(auth.router, prefix="/api/v1")
 app.include_router(tickets.router, prefix="/api/v1")
 app.include_router(comments.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
-
-
-
-
 
 
 

@@ -27,6 +27,7 @@ def create_ticket_service(*, db: Session, ticket_in, current_user: User) -> Tick
     db.add(ticket)
     db.commit()
     db.refresh(ticket)
+    db.flush()
 
     create_ticket_event(
         db=db,
